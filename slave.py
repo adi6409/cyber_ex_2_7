@@ -1,0 +1,116 @@
+import os
+import json
+import subprocess
+import argparse
+
+def format_message_response(is_success, message):
+    return {
+        "success": is_success,
+        "message": message
+    }
+
+def take_screen_shot(params):
+    subprocess.run(["screencapture", "screenshot.png"])
+    with open("screenshot.png", "rb") as f:
+        image = f.read()
+    return format_message_response(True, image.decode("latin-1"))
+
+def heartbeat():
+    return True
+
+def upload_file(params):
+    # Upload_file means download a file the client passed in the params
+    file_data = params.get("file_data")
+    destination_path = params.get("destination_path")
+    if not file_data or not destination_path:
+        return format_message_response(False, "Invalid parameters")
+    with open(destination_path, "wb") as f:
+        f.write(file_data.encode("latin-1"))
+    return format_message_response(True, "File uploaded, path: " + destination_path)
+
+def download_file(params):
+    file_name = params.get("file_path")
+    if not file_name or not os.path.exists(file_name):
+        return format_message_response(False, "File not found")
+    with open(file_name, "rb") as f:
+        file_data = f.read()
+    return format_message_response(True, file_data.decode("latin-1"))
+
+def set_clipboard(params):
+    text = params.get("text")
+    if not text:
+        return format_message_response(False, "Invalid parameters")
+    process = subprocess.Popen("pbcopy", env={"LANG": "en_US.UTF-8"}, stdin=subprocess.PIPE)
+    process.communicate(text.encode("utf-8"))
+    return format_message_response(True, "Clipboard set")
+
+def get_clipboard():
+    process = subprocess.Popen("pbpaste", stdout=subprocess.PIPE)
+    output, _ = process.communicate()
+    return output.decode("utf-8")
+
+def list_directory(params):
+    directory = params.get("directory")
+    if not directory or not os.path.exists(directory):
+        return format_message_response(False, "Invalid directory")
+    files = os.listdir(directory)
+    return format_message_response(True, files)
+
+def rm_file(params):
+    file = params.get("file")
+    if not file or not os.path.exists(file):
+        return format_message_response(False, "Invalid file")
+    os.remove(file)
+    return format_message_response(True, "File removed")
+
+def copy_file(params):
+    source = params.get("source")
+    destination = params.get("destination")
+    if not source or not destination or not os.path.exists(source):
+        return format_message_response(False, "Invalid source or destination")
+    os.system(f"cp {source} {destination}")
+    return format_message_response(True, "File copied")
+
+def run_command(params):
+    command = params.get("command")
+    if not command:
+        return format_message_response(False, "Invalid command")
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = process.communicate()
+    return format_message_response(True, output.decode("utf-8") + error.decode("utf-8"))
+
+ACTIONS = {
+    "take_screen_shot": take_screen_shot,
+    "upload_file": upload_file,
+    "download_file": download_file,
+    "heartbeat": heartbeat,
+    "set_clipboard": set_clipboard,
+    "get_clipboard": get_clipboard,
+    "list_directory": list_directory,
+    "rm_file": rm_file,
+    "copy_file": copy_file,
+    "run_command": run_command
+}
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--message", help="The action and params in JSON format")
+    args = parser.parse_args()
+
+    if not args.message:
+        print("No message provided")
+        return
+
+    message = json.loads(args.message)
+    action = message.get("action")
+    params = message.get("params", {})
+
+    if action in ACTIONS:
+        result = ACTIONS[action](params)
+    else:
+        result = format_message_response(False, "Invalid action")
+
+    print(json.dumps(result))
+
+if __name__ == "__main__":
+    main()
