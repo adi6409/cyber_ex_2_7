@@ -7,8 +7,13 @@ import argparse
 def format_message_response(is_success, message):
     return {"success": is_success, "message": message}
 
-def take_screen_shot(params):
-    subprocess.run(["screencapture", "screenshot.png"])
+def take_screen_shot(_):
+    if os.name == 'nt':  # Windows
+        import pyautogui
+        screenshot = pyautogui.screenshot()
+        screenshot.save("screenshot.png")
+    else:  # macOS and Linux
+        subprocess.run(["screencapture", "screenshot.png"] if os.name == 'posix' and os.uname().sysname == 'Darwin' else ["import", "-window", "root", "screenshot.png"])
     with open("screenshot.png", "rb") as f:
         image = f.read()
     return format_message_response(True, image.decode("latin-1"))
@@ -41,7 +46,7 @@ def set_clipboard(params):
     process.communicate(text.encode("utf-8"))
     return format_message_response(True, "Clipboard set")
 
-def get_clipboard():
+def get_clipboard(_):
     process = subprocess.Popen("pbpaste", stdout=subprocess.PIPE)
     output, _ = process.communicate()
     return format_message_response(True, output.decode("utf-8"))
