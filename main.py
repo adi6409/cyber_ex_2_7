@@ -5,17 +5,21 @@ import threading
 import json
 from socket_utils import receive_message, send_message
 import slave
+import hashlib
 
 SLAVE_FILE_NAME = "slave.py"
 update_lock = threading.Lock()
 
-def check_slave(checksum):
+def check_slave(params):
     # Calculate checksum of the slave file
-    import hashlib
     hasher = hashlib.md5()
     with open(SLAVE_FILE_NAME, "rb") as f:
         hasher.update(f.read())
     current_checksum = hasher.hexdigest()
+    print(f"Current checksum: {current_checksum}")
+    checksum = params.get("checksum")
+    print(f"Provided checksum: {checksum}")
+    print(f"Checksums match: {current_checksum == checksum}")
     return current_checksum == checksum
 
 def check_slave_action(params):
@@ -97,10 +101,13 @@ def handle_client(client, address):
                 break
             action = json.loads(action)
             action_name = action.get("action")
+            params = action.get("params", {})
             if action_name in ACTIONS:
                 action_info = ACTIONS[action_name]
                 function = action_info["function"]
-                params = {k: action.get(k) for k in action_info["params"]}
+                print(f"Performing action: {action_name} with params: {params}")
+                # params = {k: action.get(k) for k in action_info["params"]}
+                print(f"Performing action: {action_name} with params: {params}")
                 result = function(params)                        
                 result = json.dumps(result)
 

@@ -18,9 +18,6 @@ def take_screen_shot(_):
         image = f.read()
     return format_message_response(True, image.decode("latin-1"))
 
-def heartbeat():
-    return True
-
 def upload_file(params):
     file_data = params.get("file_data")
     destination_path = params.get("destination_path")
@@ -93,10 +90,6 @@ ACTIONS = {
     "download_file": {
         "function": download_file,
         "params": ["file_path"]
-    },
-    "heartbeat": {
-        "function": heartbeat,
-        "params": []
     },
     "set_clipboard": {
         "function": set_clipboard,
