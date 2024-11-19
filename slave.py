@@ -3,9 +3,19 @@ import os
 import json
 import subprocess
 import argparse
+import inspect
+from data.data_classes import Response, ParamTypes, Action, Param
+
+SLAVE_MAJOR_VERSION = 1
+SLAVE_MINOR_VERSION = 0
+SLAVE_PATCH_VERSION = 0
+SLAVE_VERSION = f"{SLAVE_MAJOR_VERSION}.{SLAVE_MINOR_VERSION}.{SLAVE_PATCH_VERSION}"
 
 def format_message_response(is_success, message):
-    return {"success": is_success, "message": message}
+    function_that_called = inspect.stack()[1].function
+    print(f"Function {function_that_called} called") # DEBUG
+    action = [action for action in ACTIONS if action.function.__name__ == function_that_called][0]
+    return Response(success=is_success, message=message, type=action.response_type, slave_version=SLAVE_VERSION)
 
 def take_screen_shot(_):
     if os.name == 'nt':  # Windows
@@ -78,63 +88,75 @@ def run_command(params):
     output, error = process.communicate()
     return format_message_response(True, output.decode("utf-8") + error.decode("utf-8"))
 
-ACTIONS = {
-    "take_screen_shot": {
-        "function": take_screen_shot,
-        "params": []
-    },
-    "upload_file": {
-        "function": upload_file,
-        "params": ["file_data", "destination_path"]
-    },
-    "download_file": {
-        "function": download_file,
-        "params": ["file_path"]
-    },
-    "set_clipboard": {
-        "function": set_clipboard,
-        "params": ["text"]
-    },
-    "get_clipboard": {
-        "function": get_clipboard,
-        "params": []
-    },
-    "list_directory": {
-        "function": list_directory,
-        "params": ["directory"]
-    },
-    "rm_file": {
-        "function": rm_file,
-        "params": ["file"]
-    },
-    "copy_file": {
-        "function": copy_file,
-        "params": ["source", "destination"]
-    },
-    "run_command": {
-        "function": run_command,
-        "params": ["command"]
-    }
-}
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--message", help="The action and params in JSON format")
-    args = parser.parse_args()
-    if not args.message:
-        print("No message provided")
-        return
-    message = json.loads(args.message)
-    action = message.get("action")
-    params = message.get("params", {})
-    if action in ACTIONS:
-        action_info = ACTIONS[action]
-        function = action_info["function"]
-        params = {k: params.get(k) for k in action_info["params"]}
-        result = function(params)
-    else:
-        result = format_message_response(False, "Invalid action")
-    print(json.dumps(result))
-
-if __name__ == "__main__":
-    main()
+ACTIONS = [
+    Action(
+        name="take_screen_shot",
+        params=[],
+        response_type=ParamTypes.FILE,
+        function=take_screen_shot
+    ),
+    Action(
+        name="upload_file",
+        params=[
+            Param(name="file_data", type=ParamTypes.FILE),
+            Param(name="destination_path", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=upload_file
+    ),
+    Action(
+        name="download_file",
+        params=[
+            Param(name="file_path", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.FILE,
+        function=download_file
+    ),
+    Action(
+        name="set_clipboard",
+        params=[
+            Param(name="text", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=set_clipboard
+    ),
+    Action(
+        name="get_clipboard",
+        params=[],
+        response_type=ParamTypes.STRING,
+        function=get_clipboard
+    ),
+    Action(
+        name="list_directory",
+        params=[
+            Param(name="directory", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=list_directory
+    ),
+    Action(
+        name="rm_file",
+        params=[
+            Param(name="file", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=rm_file
+    ),
+    Action(
+        name="copy_file",
+        params=[
+            Param(name="source", type=ParamTypes.STRING),
+            Param(name="destination", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=copy_file
+    ),
+    Action(
+        name="run_command",
+        params=[
+            Param(name="command", type=ParamTypes.STRING)
+        ],
+        response_type=ParamTypes.STRING,
+        function=run_command
+    )
+]
