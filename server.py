@@ -39,7 +39,6 @@ def update_slave(params):
     update_content = params.get("file_data")
     updated_checksum = params.get("checksum")
     if not update_content:
-        # return json.dumps({"success": False, "message": "No file data provided"})
         return Response(success=False, message="No file data provided")
     backup_file = f"{SLAVE_FILE_NAME}.bak"
     with update_lock:
@@ -128,22 +127,6 @@ def get_actions_with_params(_):
 
     return Response(success=True, message=actions_details)
 
-
-# ACTIONS = {
-#     "update_slave": {
-#         "function": update_slave,
-#         "params": ["file_data", "checksum"]
-#     },
-#     "get_actions": {
-#         "function": get_actions_with_params,
-#         "params": []
-#     },
-#     "check_slave": {
-#         "function": check_slave_action,
-#         "params": ["checksum"]
-#     }
-# }
-
 ACTIONS = [
     Action(name="update_slave", params=[
         Param(name="file_data", type=ParamTypes.FILE),
@@ -165,7 +148,6 @@ def add_result_data(result):
     if not result.server_version:
         result.server_version = SERVER_VERSION
     return result
-
 
 def handle_client(client, address):
     try:
