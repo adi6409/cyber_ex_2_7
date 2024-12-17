@@ -13,9 +13,11 @@ def initialize_client(host, port):
     print("Connected to server")
     return client
 
-def send_action(client, action, params=None):
+def send_action(client, action, params=None, wait_for_response=True):
     message = Request(client_version=CLIENT_VERSION, protocol_version=PROTOCOL_VERSION, action=action, params=params or {})
     send_message(client, message.to_json())
+    if not wait_for_response:
+        return None
     response = receive_message(client)
     response = Response.from_json(response)
     return response
@@ -77,16 +79,14 @@ def interactive_menu(client, actions):
 
     while True:
         action_name = input("Enter action ('exit' to quit): ").strip()
-        # if action_name.lower() == 'exit':
-        #     break
 
-        # Implement graceful exit
         if action_name.lower() == 'exit':
-            response = send_action(client, "exit")
-            print(f"Success: {response.success}")
-            print(f"Message: {response.message}")
-            if client.is_connected():
+            response = send_action(client, "exit", wait_for_response=False)
+            print("Sent exit command!")
+            if client.fileno() != -1:
                 client.close()
+                print("Bye bye!")
+            break
 
         action = next((a for a in actions if a.name == action_name), None)
         if not action:
@@ -106,6 +106,7 @@ def interactive_menu(client, actions):
             print(f"Error: {response.message}")
         print(f"Slave version: {response.slave_version}")
         print(f"Server version: {response.server_version}")
+
 
 
 
