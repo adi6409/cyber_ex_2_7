@@ -17,6 +17,10 @@ SERVER_MINOR_VERSION = 0
 SERVER_PATCH_VERSION = 0
 SERVER_VERSION = f"{SERVER_MAJOR_VERSION}.{SERVER_MINOR_VERSION}.{SERVER_PATCH_VERSION}"
 
+SERVER_ADDRESS = "0.0.0.0"
+SERVER_PORT = 12345
+SERVER_CONNECTIONS = 5
+
 def calculate_checksum(file_name):
     """Calculate and return MD5 checksum of a file."""
     hasher = hashlib.md5()
@@ -176,8 +180,8 @@ def find_action(action_name):
 def main():
     """Start the server to accept incoming connections."""
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 12345))
-    server.listen(5)
+    server.bind((SERVER_ADDRESS, SERVER_PORT))
+    server.listen(SERVER_CONNECTIONS)
     print("Server started")
     while True:
         client, address = server.accept()
