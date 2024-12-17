@@ -77,8 +77,16 @@ def interactive_menu(client, actions):
 
     while True:
         action_name = input("Enter action ('exit' to quit): ").strip()
+        # if action_name.lower() == 'exit':
+        #     break
+
+        # Implement graceful exit
         if action_name.lower() == 'exit':
-            break
+            response = send_action(client, "exit")
+            print(f"Success: {response.success}")
+            print(f"Message: {response.message}")
+            if client.is_connected():
+                client.close()
 
         action = next((a for a in actions if a.name == action_name), None)
         if not action:

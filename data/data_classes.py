@@ -42,6 +42,12 @@ class Response:
 
     def to_json(self):
         return json.dumps(self.__dict__, cls=CustomJSONEncoder)
+    
+    def _ret_set(self, value, attr):
+        """
+        Set 'value' to 'attr' if 'value' is None or falsy.
+        """
+        return value if value else attr
 
     @staticmethod
     def from_json(json_str):
@@ -54,6 +60,7 @@ class Response:
             data['type'] = ParamTypes(data['type']) if 'type' in data else ParamTypes.STRING
             return Response(**data)
 
+    
 @dataclass
 class Param:
     name: str
